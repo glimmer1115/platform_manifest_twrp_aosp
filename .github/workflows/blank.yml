@@ -12,21 +12,41 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Maximize Build Space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 10240
+          swap-size-mb: 10240
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
 
       - name: Set up Build Environment
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32readline-dev lib32z1-dev liblz4-tool libncurses5-dev libncursesw5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc yasm zlib1g-dev
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32readline-dev lib32z1-dev liblz4-tool libncurses-dev libncursesw5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc yasm zlib1g-dev repo
 
       - name: Configure Git
         run: |
           git config --global user.name "Builder"
           git config --global user.email "builder@action.com"
 
+      - name: Initialize Repo and Sync Source
+        run: |
+          mkdir -p workspace
+          cd workspace
+          repo init -u https://github.com/glimmer1115/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
+          repo sync -j$(nproc) --force-sync --no-clone-bundle --no-tags
+
+      - name: Clone Device Tree
+        run: |
+          cd workspace
+          git clone https://github.com/omnirom/android_device_samsung_gtalxwifi.git -b android-8.1 device/samsung/gtalxwifi
+
       - name: Run Build
         run: |
+          cd workspace
           export ALLOW_MISSING_DEPENDENCIES=true
           source build/envsetup.sh
           lunch twrp_gtalxwifi-eng
@@ -36,4 +56,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: recovery-image
-          path: out/target/product/gtalxwifi/recovery.img
+          path: workspace/out/target/product/gtalxwifi/recovery.img
