@@ -31,6 +31,7 @@ jobs:
         run: |
           git config --global user.name "Builder"
           git config --global user.email "builder@action.com"
+          git config --global credential.helper cache
 
       - name: Initialize Repo and Sync Source
         run: |
@@ -42,7 +43,7 @@ jobs:
       - name: Clone Device Tree
         run: |
           cd workspace
-          git clone https://github.com/omnirom/android_device_samsung_gtalxwifi.git -b android-8.1 device/samsung/gtalxwifi
+          git clone https://github.com/omnirom/android_device_samsung_gtalxwifi.git -b android-8.1 device/samsung/gtalxwifi || git clone --depth=1 https://github.com/omnirom/android_device_samsung_gtalxwifi.git device/samsung/gtalxwifi
 
       - name: Run Build
         run: |
