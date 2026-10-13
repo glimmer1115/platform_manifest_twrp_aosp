@@ -16,22 +16,22 @@ jobs:
         uses: easimon/maximize-build-space@master
         with:
           root-reserve-mb: 10240
-          swap-size-mb: 10240
+          swap-size-mb: 4096
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
 
-      - name: Set up Build Environment
+      - name: Set up Build Environment (Minimal Packages)
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32readline-dev lib32z1-dev liblz4-tool libncurses-dev libncursesw5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc yasm zlib1g-dev repo
+          sudo apt-get install -y bc bison build-essential ccache curl flex git gnupg gperf libncurses-dev libssl-dev zlib1g-dev repo
 
       - name: Configure Git
         run: |
           git config --global user.name "Builder"
           git config --global user.email "builder@action.com"
-          git config --global credential.helper cache
+          git config --global credential.helper ""
 
       - name: Initialize Repo and Sync Source with Retry
         run: |
@@ -39,7 +39,6 @@ jobs:
           cd workspace
           repo init -u https://github.com/glimmer1115/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
           
-          # 네트워크 불안정(503 에러 등)으로 sync가 실패할 경우 자동으로 최대 5번 재시도
           n=0
           until [ "$n" -ge 5 ]
           do
@@ -52,7 +51,8 @@ jobs:
       - name: Clone Device Tree
         run: |
           cd workspace
-          git clone https://github.com/omnirom/android_device_samsung_gtalxwifi.git -b android-8.1 device/samsung/gtalxwifi || git clone --depth=1 https://github.com/omnirom/android_device_samsung_gtalxwifi.git device/samsung/gtalxwifi
+          mkdir -p device/samsung
+          git clone --depth=1 https://github.com/omnirom/android_device_samsung_gtalxwifi.git -b android-8.1 device/samsung/gtalxwifi
 
       - name: Run Build
         run: |
