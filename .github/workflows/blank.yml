@@ -33,12 +33,21 @@ jobs:
           git config --global user.email "builder@action.com"
           git config --global credential.helper cache
 
-      - name: Initialize Repo and Sync Source
+      - name: Initialize Repo and Sync Source with Retry
         run: |
           mkdir -p workspace
           cd workspace
           repo init -u https://github.com/glimmer1115/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
-          repo sync -j$(nproc) --force-sync --no-clone-bundle --no-tags
+          
+          # 네트워크 불안정(503 에러 등)으로 sync가 실패할 경우 자동으로 최대 5번 재시도
+          n=0
+          until [ "$n" -ge 5 ]
+          do
+            repo sync -j$(nproc) --force-sync --no-clone-bundle --no-tags && break
+            n=$((n+1))
+            echo "Repo sync failed. Retrying attempt $n..."
+            sleep 15
+          done
 
       - name: Clone Device Tree
         run: |
